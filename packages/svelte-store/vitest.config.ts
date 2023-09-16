@@ -1,6 +1,8 @@
 import { defineConfig } from 'vitest/config'
+import { svelte } from '@sveltejs/vite-plugin-svelte'
 
 export default defineConfig({
+  plugins: [svelte({ hot: !process.env.VITEST })],
   test: {
     name: 'svelte-store',
     dir: './src',
@@ -8,9 +10,5 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     coverage: { provider: 'istanbul' },
-  },
-  esbuild: {
-    jsxFactory: 'h',
-    jsxFragment: 'Fragment',
   },
 })

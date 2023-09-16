@@ -1,9 +1,36 @@
 import type { AnyUpdater, Store } from '@tanstack/store'
+import { afterUpdate, onDestroy } from 'svelte'
 import { writable, get } from 'svelte/store'
 
 export * from '@tanstack/store'
 
 export type NoInfer<T> = [T][T extends any ? 0 : never]
+
+function watch(callback: () => void, deps: () => any[]) {
+  let cleanup: any = null
+
+  function apply() {
+    if (cleanup) cleanup()
+    cleanup = callback()
+  }
+
+  if (deps) {
+    let values: any[] = []
+    afterUpdate(() => {
+      const newValues = deps()
+      if (newValues.some((value: any, i: number) => value !== values[i])) {
+        apply()
+        values = newValues
+      }
+    })
+  } else {
+    afterUpdate(apply)
+  }
+
+  onDestroy(() => {
+    if (cleanup) cleanup()
+  })
+}
 
 export function useStore<
   TState,
@@ -15,7 +42,12 @@ export function useStore<
 ): TSelected {
   const slice = writable(store)
 
-  return selector(get(slice) as never)
+  watch(
+    () => slice.set(store),
+    () => [store, selector, slice],
+  )
+
+  return selector(get(slice).state as never)
 }
 
 export function shallow<T>(objA: T, objB: T) {
